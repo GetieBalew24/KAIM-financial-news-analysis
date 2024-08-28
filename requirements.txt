@@ -1,8 +1,9 @@
 pandas
 numpy
 matplotlib
+seaborn
 scikit-learn
-yfinance
-# ta-lib
-textblob
 nltk
+yfinance
+TA-Lib
+PyFolio
