@@ -176,4 +176,33 @@ class TextAnalysis:
         
         return topics
     
-    
+    # Keyword Extraction using TF-IDF
+    def extract_keywords(self, n_keywords=5):
+        # Initialize TF-IDF Vectorizer
+        self.text_preprocess()
+        vectorizer = TfidfVectorizer(max_features=n_keywords)
+        tfidf_matrix = vectorizer.fit_transform(self.data['cleaned_headline'])
+        
+        # Extract keywords
+        keywords = vectorizer.get_feature_names_out()
+        return keywords
+      
+    # Topic Modeling
+    def perform_topic_modeling(self, n_topics=2):
+        self.text_preprocess()
+        # Initialize TF-IDF Vectorizer
+        tfvectorizer = TfidfVectorizer(stop_words='english')
+        tfidfMatrix = tfvectorizer.fit_transform(self.data['cleaned_headline'])
+        
+        # Perform LDA
+        lda = LatentDirichletAllocation(n_components=n_topics, random_state=0)
+        lda.fit(tfidfMatrix)
+        
+        # Display Topics
+        words = tfvectorizer.get_feature_names_out()
+        topics = []
+        for topic_idx, topic in enumerate(lda.components_):
+            topicKeywords = [words[i] for i in topic.argsort()[:-n_topics - 1:-1]]
+            topics.append(f"Topic {topic_idx+1}: " + ", ".join(topicKeywords))
+        
+        return topics
