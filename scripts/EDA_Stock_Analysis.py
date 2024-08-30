@@ -95,5 +95,85 @@ class TextAnalysis:
         plt.xlabel('Day of the Week')
         plt.ylabel('Number of Articles')
         plt.show()
-
-   
+    
+    # Text Analysis
+    def text_preprocess(self):
+        # Convert to lowercase and remove non-alphabetic characters
+        self.data['cleaned_headline']=self.data['headline'].str.lower().str.replace(r'[^a-zA-Z\s]', '', regex=True) 
+        # Remove leading and trailing whitespace
+        self.data['cleaned_headline']=self.data['cleaned_headline'].str.strip() 
+        # remove stop words
+        stop_words = set(stopwords.words('english'))
+        self.data['cleaned_headline'] = self.data['cleaned_headline'].apply(lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
+        return self.data
+    
+    def get_sentiment(self):
+        # First preprocess the text
+        self.text_preprocess()
+        # Calculate the sentiment polarity of each headline
+        self.data['polarity'] = self.data['cleaned_headline'].apply(lambda x: TextBlob(x).sentiment.polarity)
+        # Categorize the sentiment based on the polarity score
+        self.data['sentiment'] = self.data['polarity'].apply(lambda x: 'positive' if x > 0 else 'Negative' if x < 0 else 'Neutral')
+        return self.data
+    def plot_sentiment_distribution(self):
+        # First preprocess the text
+        self.text_preprocess()
+        
+        # Visualize the sentiment distribution
+        sentiment_counts = self.get_sentiment()['sentiment'].value_counts()
+        print(sentiment_counts) 
+        plt.figure(figsize=(8, 6))
+        sns.barplot(x=sentiment_counts.index, y=sentiment_counts.values)
+        plt.xticks(rotation=45)  
+        plt.xlabel('Sentiment')  
+        plt.ylabel('Number of Articles') 
+        plt.title('Sentiment Distribution') 
+        plt.show()  
+    
+    def word_frequency(self):
+        # First preprocess the text
+        self.text_preprocess()
+        # Concatenate all headlines in a single string
+        all_text = ' '.join(self.data['cleaned_headline']) 
+        # Count the frequency of each word
+        word_freq = pd.Series(all_text.split()).value_counts() 
+        # Plot the top 20 most frequent words
+        word_freq[:20].plot(kind='bar', figsize=(12, 6))
+        plt.xticks(rotation=45)
+        plt.xlabel('Words') 
+        plt.ylabel('Frequency')
+        plt.title('Word Frequency Distribution')
+        plt.show()        
+    
+    # Keyword Extraction using TF-IDF
+    def extract_keywords(self, n_keywords=5):
+        # Initialize TF-IDF Vectorizer
+        self.text_preprocess()
+        vectorizer = TfidfVectorizer(max_features=n_keywords)
+        tfidf_matrix = vectorizer.fit_transform(self.data['cleaned_headline'])
+        
+        # Extract keywords
+        keywords = vectorizer.get_feature_names_out()
+        return keywords
+      
+    # Topic Modeling using LDA
+    def perform_topic_modeling(self, n_topics=2):
+        self.text_preprocess()
+        # Initialize TF-IDF Vectorizer
+        vectorizer = TfidfVectorizer(stop_words='english')
+        tfidf_matrix = vectorizer.fit_transform(self.data['cleaned_headline'])
+        
+        # Perform LDA
+        lda = LatentDirichletAllocation(n_components=n_topics, random_state=0)
+        lda.fit(tfidf_matrix)
+        
+        # Display Topics
+        words = vectorizer.get_feature_names_out()
+        topics = []
+        for topic_idx, topic in enumerate(lda.components_):
+            topic_keywords = [words[i] for i in topic.argsort()[:-n_topics - 1:-1]]
+            topics.append(f"Topic {topic_idx+1}: " + ", ".join(topic_keywords))
+        
+        return topics
+    
+    
